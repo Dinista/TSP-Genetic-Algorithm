@@ -2,7 +2,7 @@
 
 ## Introduction
 Consist in a genetic algorithm implementation to solve the Travelling Salesman Problem.
-All the code was written in python, and an portuguese article was written comparing result of specific inputs.
+All the code was written in python, and an portuguese article was written analyzing the results of specific inputs.
 <p>The article can be found in the folder: <i> docs </i></p>
 
 <b>Second project of the class Algorithmic Modeling and Optimization.</b>
@@ -14,4 +14,18 @@ All the code was written in python, and an portuguese article was written compar
 
 ## How to use
 
-### inputs
+### Inputs
+<p>The entry is a file containing a list of nodes with it coordinates.</p>
+<p>An example of entry will be:</p>
+    
+    1 1380 939
+    2 2848 96
+    3 3510 1671
+    4 457 334
+    5 3888 666
+
+<p>The first column is representing the node, and the next two columns representing it coordinates.</p>
+
+### Output
+
+<p>The output will be the best solution (at least close to the best) for the given graph.</p>
