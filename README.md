@@ -2,7 +2,7 @@
 
 ## Introduction
 Consist in a genetic algorithm implementation to solve the Travelling Salesman Problem.
-All the code was written in python, and an portuguese article was written analyzing the results of specific inputs.
+All the code was made in python, and a portuguese article was written analyzing the performance applying specific inputs.
 <p>The article can be found in the folder: <i> docs </i></p>
 
 <b>Second project of the class Algorithmic Modeling and Optimization.</b>
