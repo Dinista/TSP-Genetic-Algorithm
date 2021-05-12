@@ -1,5 +1,7 @@
 import math, random
 import heapq
+import pandas  as pd
+import numpy as np
 
 class Node:
     def __init__(self, name=None, x=None, y=None):
@@ -77,25 +79,78 @@ def generate_population (grafo, population_size):
 
 aux = generate_population(grafo, 100)
 
-a = [()]
+a = []
 
 for i in aux:
     heapq.heappush(a, (i.getFitness(), i))
 
-
 heapq._heapify_max(a)
 
-def selection (a):
-    elite = []
-    selected = []
-    for i in range(0, 9):
-        elite.append(heapq.heappop(a))
+def selection (popRanked):
+    eliteSize = 10
+    selectionResults = []
+    for i in range(0, eliteSize):
+        retirado = heapq.heappop(popRanked)
+        #selectionResults.append(heapq.heappop(popRanked))
+        if(len(retirado) > 0):
+             selectionResults.append(retirado)
+        
+        heapq._heapify_max(popRanked)
     
-    for 
-    a[random.randint(0, 99)]
+    # touneio
     
+    for selected in range(0, 55): 
+        a = [popRanked[random.randint(0, 89)],
+            popRanked[random.randint(0, 89)],
+            popRanked[random.randint(0, 89)],
+            popRanked[random.randint(0, 89)],
+            popRanked[random.randint(0, 89)]]
+        a.sort(reverse=True)
+        selectionResults.append(a)
+    
+    return selectionResults
 
-selection(a)
+#t = selection(a)
+
+selecionados = selection(a)
+
+""" def breed(parentA, parentB):
+    #parent1 = parentA.route
+    #parent2 = parentB.route
+    child = []
+    childP1 = []
+    childP2 = []
+    
+    geneA = int(random.random() * len(parent1))
+    geneB = int(random.random() * len(parent1))
+    
+    startGene = min(geneA, geneB)
+    endGene = max(geneA, geneB)
+
+    for i in range(startGene, endGene):
+        childP1.append(parent1[i])
+        
+    childP2 = [item for item in parent2 if item not in childP1]
+
+    child = childP1 + childP2
+    return child """
+
+""" def breedPopulation(matingpool):
+    children = []
+    #ength = len(matingpool) - 10
+    pool = random.sample(matingpool, len(matingpool))
+    # Aqui novamente usamos o elitismo para manter as melhores rotas/indivíduos 
+    for i in range(0, 10):
+        children.append(matingpool[i])
+    # Aqui utilizamos a função de breed mencionada acima para preencher o resto
+    # dos indivíduos
+    for i in range(10, len(matingpool)):
+        child = (breed(pool[i][1][1].route, pool[len(matingpool)-i-1][1].route),breed(pool[i][1].route, pool[len(matingpool)-i-1][1][1].route))
+        children.append(child)
+    return children """
+
+
+""" breedPopulation(selecionados) """
 
 arquivo.close()
     
