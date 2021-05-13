@@ -1,7 +1,7 @@
 # TSP-Genetic-Algorithm
 
 ## Introduction
-Consist in a genetic algorithm implementation to solve the Travelling Salesman Problem.
+A genetic algorithm implementation to solve the Travelling Salesman Problem.
 All the code was made in python, and a portuguese article was written analyzing the performance applying specific inputs.
 <p>The article can be found in the folder: <i> docs </i></p>
 
