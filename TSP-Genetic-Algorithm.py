@@ -3,6 +3,9 @@ import heapq
 import pandas  as pd
 import numpy as np
 import matplotlib.pyplot as plt
+import cProfile, pstats
+import bisect
+
 
 class Node:
     def __init__(self, name=None, x=None, y=None):
@@ -17,9 +20,12 @@ class Node:
         return self.y
     
     def distanceTo(self, city):
-        xDistance = abs(self.getX() - city.getX())
-        yDistance = abs(self.getY() - city.getY())
-        distance = math.sqrt((xDistance ** 2) + (yDistance ** 2))
+        #xDistance = abs(self.getX() - city.getX())
+        #yDistance = abs(self.getY() - city.getY())
+        #distance = math.sqrt((xDistance ** 2) + (yDistance ** 2))
+        cityA = (self.getX(), self.getY())
+        cityB = (city.getX(), city.getY())
+        distance = math.dist(cityA, cityB)
         return distance
     
     def __repr__(self) -> str:
@@ -54,12 +60,12 @@ class Route:
         return self.distance
 
     def __lt__(self, other):
-        return self.getDistance() < other.getDistance()
+        return int(self.getDistance()) < int(other.getDistance())
 
 
 
 
-arquivo = open("berlin.txt", 'r')
+arquivo = open("a280.tsp.txt", 'r')
 
 linhas = arquivo.readlines()
 
@@ -81,7 +87,8 @@ def createRoute (grafo):
 def generate_population (grafo, population_size):
     population = []
     for i in range(0, population_size):
-        population.append(createRoute(grafo))
+        heapq.heappush(population, createRoute(grafo))
+    #heapq.heapify(population)
     return population
 
 
@@ -92,11 +99,29 @@ def generate_population (grafo, population_size):
 
 #heapq._heapify_max(PopulationOrdered)
 
+def rw_selection(population):
+    f_max = population[0].getFitness()
+    terminou = True
+    while(terminou):
+        #Select randomly one of the individuals
+        index = random.randint(0, len(population) - 1)
+        i = population[index]
+        #The selection is accepted with probability fitness(i) / f_max
+        if (random.uniform(0, 1) < i.getFitness() / f_max):
+            return i
 
 def selection (population):
-    population_fitness = sum([chromosome.getFitness() for chromosome in population]) 
-    chromosome_probabilities = [chromosome.getFitness()/population_fitness for chromosome in population]
-    return np.random.choice(population, p=chromosome_probabilities)
+    #allF = [chromosome.getFitness() for chromosome in population]
+    #ch = [chromosome/sum(allF) for chromosome in allF]
+    #cfs = [sum(allF[:i+1]) for i in range(len(allF))]
+    #father = population[bisect.bisect_left(cfs, random.uniform(0, cfs[-1]))]
+    #mother = population[bisect.bisect_left(cfs, random.uniform(0, cfs[-1]))]
+    father = rw_selection(population)
+    mother = rw_selection(population)
+    while (father == mother):
+        mother = rw_selection(population)
+    
+    return father, mother
 
 
 def crossover (father, mother):
@@ -136,18 +161,22 @@ def mutation(routeObj, mutationRate):
 def nextGeneration(population, mutationRate):
     nextGeneration = []
     popSize = 145;
-    ordered = getBestIndividual(population)
-    
-    for i in range(0, 55):
-        nextGeneration.append(ordered[i][1])
-    
+    #ordered = getBestIndividual(population)
+    nextGeneration = heapq.nsmallest(55, population)
+    #for i in range(0, 55):
+        #nextGeneration.append(ordered[i][1])
+        #heapq.nsmallest
     for i in range(0, popSize):
-        father = selection(population)
-        mother = selection(population)
-        while(father == mother):
-            mother = selection(population)
+        father, mother = selection(population)
+        #while(father == mother):
+            #father, mother = selection(population)
         child = crossover(father, mother)
-        nextGeneration.append(mutation(child, mutationRate))
+        heapq.heappush(nextGeneration , mutation(child, mutationRate))
+    #heapq.heappush(nextGeneration, buscaLocal(nextGeneration[0]))
+    
+    result = two_opt(nextGeneration[0])
+    if nextGeneration[0].getDistance() != result.getDistance():
+        nextGeneration[0] = result
     return nextGeneration
 
 def getBestIndividual (population):
@@ -157,29 +186,85 @@ def getBestIndividual (population):
     orderedPopulation.sort(key=lambda x:x[0], reverse=True)
     return orderedPopulation
 
+
+def twoOptSwap(route, i, k):
+    new_route = []
+    for index in range(0, i):
+        new_route.append(route[index])
+    for index in range(k, i-1, -1):
+        new_route.append(route[index])
+    for index in range(k+1, len(route)):
+        new_route.append(route[index])
+    
+    return new_route
+
+
+def two_opt(route):
+     best = route
+     improved = True
+     while improved:
+          improved = False
+          for i in range(1, len(route.route)-2):
+               for j in range(i+1, len(route.route)):
+                    if j-i == 1: continue # changes nothing, skip then
+                    new_route = Route(twoOptSwap(best.route, i, j))
+                    #print(new_route.getDistance() == best.getDistance())
+                    if new_route.getDistance() < best.getDistance():  # what should cost be?
+                         best = new_route
+                         break
+                         improved = True
+                         #print("oi")
+          route = best
+     return best
+
+
+def geraVizinho(pCaminho, pContador):
+    caminho = pCaminho
+    (caminho[pContador], caminho[pContador +1]) = (caminho[pContador +1], caminho[pContador])
+    return caminho
+
+def buscaLocal(objRoute):
+    i = 0
+    vizinho = Route([])
+    for i in range(len(objRoute.route)-1):
+        vizinho.route = geraVizinho(objRoute.route, i)
+        if vizinho.getFitness() > objRoute.getFitness():
+            objRoute = vizinho
+            break
+
+    return objRoute
+
 def GA ():
     menorValor = 9999999999
     progress = []
     population = generate_population(grafo, 200)
-    print("Distancia inicial:", int(getBestIndividual(population)[0][1].getDistance()))
-    for i in range(0, 800):
+    print("Distancia inicial:", int(population[0].getDistance())) #int(getBestIndividual(population)[0][1].getDistance()))
+    
+    #pr = cProfile.Profile()
+    #pr.enable()
+    
+    for i in range(0, 700):
         population = nextGeneration(population, 0.001)
-        Melhor = int(getBestIndividual(population)[0][1].getDistance())
+        Melhor = int(population[0].getDistance())
         progress.append(Melhor)
         if ( Melhor < menorValor):
             menorValor = Melhor
+            menorRota = population[0]
+    #pr.disable()
+    #pr.dump_stats('data')
+    #ps = pstats.Stats('data')
+    #ps.sort_stats(pstats.SortKey.CUMULATIVE)
+    #ps.print_stats()
     
     plt.plot(progress)
     plt.ylabel('Distância')
     plt.xlabel('Geração')
     plt.show()
-
+    #print( "melhorou?", two_opt(menorRota).getDistance())
     print("Distância final:", menorValor)
 
 arquivo.close()
-
 GA()
-
 
 
 
