@@ -2,10 +2,8 @@ import math, random, time
 import heapq
 import matplotlib.pyplot as plt #biblioteca para gerar gráficos
 import glob, os #leitura de arquivo
-#import cProfile, pstats
-#import bisect
 
-
+# ------------------- Vertice (x,y) ---------------------
 
 class Node:
     def __init__(self, name=None, x=None, y=None):
@@ -30,6 +28,9 @@ class Node:
     
     def __repr__(self) -> str:
         return "(" + str(self.x) + "," + str(self.y) + ")"
+
+
+# ------------------- Caminho ---------------------
 
 class Route:
     def __init__(self, route):
@@ -62,6 +63,7 @@ class Route:
     def __lt__(self, other):
         return int(self.getDistance()) < int(other.getDistance())
 
+# ------------------- Gera População ---------------------
 
 def createRoute (grafo):
     route = random.sample(grafo, len(grafo))
@@ -73,13 +75,7 @@ def generate_population (grafo, population_size):
         heapq.heappush(population, createRoute(grafo))
     return population
 
-
-#PopulationOrdered = []
-
-#for individuals in population:
-    #heapq.heappush(PopulationOrdered, (individuals.getFitness(), individuals))
-
-#heapq._heapify_max(PopulationOrdered)
+# ------------------- Seleção ---------------------
 
 def selection(population):
     f_max = population[0].getFitness()
@@ -90,14 +86,7 @@ def selection(population):
         if (random.uniform(0, 1) < i.getFitness() / f_max):
             return i
 
-#def selection (population):
-    #father = rw_selection(population)
-    #mother = rw_selection(population)
-    #while (father == mother):
-        #mother = rw_selection(population)
-    
-    #return father, mother
-
+# ------------------- Crossover ---------------------
 
 def crossover (father, mother):
     child = []
@@ -116,6 +105,7 @@ def crossover (father, mother):
     child = childP1 + childP2
     return Route(child)
 
+# ------------------- Mutação ---------------------
 
 def mutation(routeObj, mutationRate):
     route = routeObj.route
@@ -130,15 +120,16 @@ def mutation(routeObj, mutationRate):
             route[swapIndex] = Node1
     return Route(route)
 
+# ------------------- Atualiza população ---------------------
+
+solucoes = {} #armazena as soluções já encontradas na busca local
+#para que não tenha que refazê-las
+
 def nextGeneration(population, mutationRate, popSize1, localSearch):
     popSize = popSize1 - int(popSize1 * 0.25)
     nextGeneration = []
-    #ordered = getBestIndividual(population)
     elitSize = int(popSize1 * 0.25)
     nextGeneration = heapq.nsmallest(elitSize, population)
-    #for i in range(0, 55):
-        #nextGeneration.append(ordered[i][1])
-        #heapq.nsmallest
     for i in range(0, popSize):
         father = selection(population)
         mother = selection(population)
@@ -148,21 +139,19 @@ def nextGeneration(population, mutationRate, popSize1, localSearch):
         
         child = crossover(father, mother)
         heapq.heappush(nextGeneration , mutation(child, mutationRate))
-    
-    if (localSearch == True):
-        result = two_opt(nextGeneration[0])
-        if nextGeneration[0].getDistance() != result.getDistance():
-            nextGeneration[0] = result
 
+    if (localSearch == True):
+        if str(nextGeneration[0].route) in solucoes:
+            nextGeneration[0] = solucoes[str(nextGeneration[0].route)]
+        else:
+            result = local_search(nextGeneration[0])
+            solucoes[str(nextGeneration[0].route)] = result
+            if nextGeneration[0].distance > result.distance:
+                nextGeneration[0] = result
     return nextGeneration
 
-#def getBestIndividual (population):
-    #orderedPopulation = []
-    #for individual in population:
-        #orderedPopulation.append((individual.getFitness(), individual))
-    #orderedPopulation.sort(key=lambda x:x[0], reverse=True)
-    #return orderedPopulation
 
+# ------------------- Busca Local ---------------------
 
 def twoOptSwap(route, i, k):
     new_route = []
@@ -175,7 +164,7 @@ def twoOptSwap(route, i, k):
     return new_route
 
 
-def two_opt(route):
+def local_search(route):
      best = route
      improved = True
      while improved:
@@ -184,20 +173,21 @@ def two_opt(route):
                for j in range(i+1, len(route.route)):
                     if j-i == 1: continue # changes nothing, skip then
                     new_route = Route(twoOptSwap(best.route, i, j))
-                    if new_route.getDistance() < best.getDistance():
+                    if new_route.getDistance() < best.distance:
                          best = new_route
                          break
-                         improved = True
+                         #improved = True
           route = best
      return best
+
+# ------------------- GA ---------------------
 
 def GA (graph, fileName, popSize, mutationRate, numberOfGenerations, localSearch):
     menorValor = 9999999999
     progress = []
     population = generate_population(graph, popSize)
     print("Distância inicial:", int(population[0].getDistance()))
-    #pr = cProfile.Profile()
-    #pr.enable()
+    progress.append(int(population[0].getDistance()))
     inicio = time.time()
     for i in range(0, numberOfGenerations):
         population = nextGeneration(population, mutationRate, popSize, localSearch)
@@ -206,11 +196,6 @@ def GA (graph, fileName, popSize, mutationRate, numberOfGenerations, localSearch
         if ( Melhor < menorValor):
             menorValor = Melhor
             menorRota = population[0]
-    #pr.disable()
-    #pr.dump_stats('data')
-    #ps = pstats.Stats('data')
-    #ps.sort_stats(pstats.SortKey.CUMULATIVE)
-    #ps.print_stats()
     fim = time.time()
     print("Distância final:", menorValor)
     print("Tempo de execução:",round(((fim - inicio)*1000)/1000,3),"s\n")
@@ -219,6 +204,8 @@ def GA (graph, fileName, popSize, mutationRate, numberOfGenerations, localSearch
     plt.ylabel('Distância')
     plt.xlabel('Geração')
     plt.show()
+
+# ------------------- Leitura de arquivo ---------------------
 
 def readFile ():
     os.chdir("./Tests")
@@ -255,15 +242,17 @@ def readFile ():
     
     return graph, str(files[op])
 
+# ------------------- Main ---------------------
+
 def main ():
     entrada, fileName = readFile()
+    # ---- Parâmetros do genético -------
     populationSize = 200 
-    mutationRate = 0.001
-    numberOfGenerations = 700
-    localSearch = False
+    mutationRate = 0.01
+    numberOfGenerations = 300
+    localSearch = True
+    # -----------------------------------
     GA(entrada, fileName, populationSize, mutationRate, numberOfGenerations, localSearch)
 
 if __name__ == "__main__":
     main()
-
-
