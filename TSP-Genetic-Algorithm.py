@@ -8,8 +8,8 @@ import glob, os #leitura de arquivo
 class Node:
     def __init__(self, name=None, x=None, y=None):
         self.name = name
-        self.x = int(x)
-        self.y = int(y)
+        self.x = float(x)
+        self.y = float(y)
     
     def getX(self):
         return self.x
@@ -61,7 +61,7 @@ class Route:
         return self.distance
 
     def __lt__(self, other):
-        return int(self.getDistance()) < int(other.getDistance())
+        return float(self.getDistance()) < float(other.getDistance())
 
 # ------------------- Gera População ---------------------
 
