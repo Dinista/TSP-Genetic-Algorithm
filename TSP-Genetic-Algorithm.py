@@ -1,10 +1,10 @@
-import math, random
+import math, random, time
 import heapq
-import pandas  as pd
-import numpy as np
-import matplotlib.pyplot as plt
-import cProfile, pstats
-import bisect
+import matplotlib.pyplot as plt #biblioteca para gerar gráficos
+import glob, os #leitura de arquivo
+#import cProfile, pstats
+#import bisect
+
 
 
 class Node:
@@ -19,13 +19,13 @@ class Node:
     def getY(self):
         return self.y
     
-    def distanceTo(self, city):
+    def distanceTo(self, node):
         #xDistance = abs(self.getX() - city.getX())
         #yDistance = abs(self.getY() - city.getY())
         #distance = math.sqrt((xDistance ** 2) + (yDistance ** 2))
-        cityA = (self.getX(), self.getY())
-        cityB = (city.getX(), city.getY())
-        distance = math.dist(cityA, cityB)
+        nodeA = (self.getX(), self.getY())
+        nodeB = (node.getX(), node.getY())
+        distance = math.dist(nodeA, nodeB)
         return distance
     
     def __repr__(self) -> str:
@@ -39,45 +39,28 @@ class Route:
 
     def getFitness(self):
         if self.fitness == 0:
-            self.fitness = 1/float(self.getDistance())
+            self.fitness = 1 / float(self.getDistance())
         return self.fitness
 
     def getDistance(self):
         if self.distance == 0:
-            tourDistance = 0
-            for cityIndex in range(0, len(self.route)):
-                fromCity = self.route[cityIndex]
-                destinationCity = None
-                if cityIndex + 1 < len(self.route):
-                    destinationCity = self.route[cityIndex+1]
+            routeDistance = 0
+            for nodeIndex in range(0, len(self.route)):
+                fromNode = self.route[nodeIndex]
+                destinationNode = None
+                if nodeIndex + 1 < len(self.route):
+                    destinationNode = self.route[nodeIndex + 1]
                 else:
-                    destinationCity = self.route[0]
+                    destinationNode = self.route[0]
                 
-                tourDistance += fromCity.distanceTo(destinationCity)
+                routeDistance += fromNode.distanceTo(destinationNode)
             
-            self.distance = tourDistance
+            self.distance = routeDistance
         
         return self.distance
 
     def __lt__(self, other):
         return int(self.getDistance()) < int(other.getDistance())
-
-
-
-
-arquivo = open("a280.tsp.txt", 'r')
-
-linhas = arquivo.readlines()
-
-linhas = linhas[6:]
-
-grafo = []
-
-for index in range(0, len(linhas) - 1):
-    if (linhas[index] == "EOF"):
-        break;
-    linha = linhas[index].split()
-    grafo.append(Node(linha[0], linha[1], linha[2]))
 
 
 def createRoute (grafo):
@@ -88,7 +71,6 @@ def generate_population (grafo, population_size):
     population = []
     for i in range(0, population_size):
         heapq.heappush(population, createRoute(grafo))
-    #heapq.heapify(population)
     return population
 
 
@@ -99,29 +81,22 @@ def generate_population (grafo, population_size):
 
 #heapq._heapify_max(PopulationOrdered)
 
-def rw_selection(population):
+def selection(population):
     f_max = population[0].getFitness()
     terminou = True
     while(terminou):
-        #Select randomly one of the individuals
         index = random.randint(0, len(population) - 1)
         i = population[index]
-        #The selection is accepted with probability fitness(i) / f_max
         if (random.uniform(0, 1) < i.getFitness() / f_max):
             return i
 
-def selection (population):
-    #allF = [chromosome.getFitness() for chromosome in population]
-    #ch = [chromosome/sum(allF) for chromosome in allF]
-    #cfs = [sum(allF[:i+1]) for i in range(len(allF))]
-    #father = population[bisect.bisect_left(cfs, random.uniform(0, cfs[-1]))]
-    #mother = population[bisect.bisect_left(cfs, random.uniform(0, cfs[-1]))]
-    father = rw_selection(population)
-    mother = rw_selection(population)
-    while (father == mother):
-        mother = rw_selection(population)
+#def selection (population):
+    #father = rw_selection(population)
+    #mother = rw_selection(population)
+    #while (father == mother):
+        #mother = rw_selection(population)
     
-    return father, mother
+    #return father, mother
 
 
 def crossover (father, mother):
@@ -141,9 +116,6 @@ def crossover (father, mother):
     child = childP1 + childP2
     return Route(child)
 
-#parent1 = selection(population)
-#parent2 = selection(population)
-#child = crossover(parent1, parent2)
 
 def mutation(routeObj, mutationRate):
     route = routeObj.route
@@ -158,33 +130,38 @@ def mutation(routeObj, mutationRate):
             route[swapIndex] = Node1
     return Route(route)
 
-def nextGeneration(population, mutationRate):
+def nextGeneration(population, mutationRate, popSize1, localSearch):
+    popSize = popSize1 - int(popSize1 * 0.25)
     nextGeneration = []
-    popSize = 145;
     #ordered = getBestIndividual(population)
-    nextGeneration = heapq.nsmallest(55, population)
+    elitSize = int(popSize1 * 0.25)
+    nextGeneration = heapq.nsmallest(elitSize, population)
     #for i in range(0, 55):
         #nextGeneration.append(ordered[i][1])
         #heapq.nsmallest
     for i in range(0, popSize):
-        father, mother = selection(population)
-        #while(father == mother):
-            #father, mother = selection(population)
+        father = selection(population)
+        mother = selection(population)
+        
+        while(father == mother):
+            mother = selection(population)
+        
         child = crossover(father, mother)
         heapq.heappush(nextGeneration , mutation(child, mutationRate))
-    #heapq.heappush(nextGeneration, buscaLocal(nextGeneration[0]))
     
-    result = two_opt(nextGeneration[0])
-    if nextGeneration[0].getDistance() != result.getDistance():
-        nextGeneration[0] = result
+    if (localSearch == True):
+        result = two_opt(nextGeneration[0])
+        if nextGeneration[0].getDistance() != result.getDistance():
+            nextGeneration[0] = result
+
     return nextGeneration
 
-def getBestIndividual (population):
-    orderedPopulation = []
-    for individual in population:
-        orderedPopulation.append((individual.getFitness(), individual))
-    orderedPopulation.sort(key=lambda x:x[0], reverse=True)
-    return orderedPopulation
+#def getBestIndividual (population):
+    #orderedPopulation = []
+    #for individual in population:
+        #orderedPopulation.append((individual.getFitness(), individual))
+    #orderedPopulation.sort(key=lambda x:x[0], reverse=True)
+    #return orderedPopulation
 
 
 def twoOptSwap(route, i, k):
@@ -195,7 +172,6 @@ def twoOptSwap(route, i, k):
         new_route.append(route[index])
     for index in range(k+1, len(route)):
         new_route.append(route[index])
-    
     return new_route
 
 
@@ -208,43 +184,23 @@ def two_opt(route):
                for j in range(i+1, len(route.route)):
                     if j-i == 1: continue # changes nothing, skip then
                     new_route = Route(twoOptSwap(best.route, i, j))
-                    #print(new_route.getDistance() == best.getDistance())
-                    if new_route.getDistance() < best.getDistance():  # what should cost be?
+                    if new_route.getDistance() < best.getDistance():
                          best = new_route
                          break
                          improved = True
-                         #print("oi")
           route = best
      return best
 
-
-def geraVizinho(pCaminho, pContador):
-    caminho = pCaminho
-    (caminho[pContador], caminho[pContador +1]) = (caminho[pContador +1], caminho[pContador])
-    return caminho
-
-def buscaLocal(objRoute):
-    i = 0
-    vizinho = Route([])
-    for i in range(len(objRoute.route)-1):
-        vizinho.route = geraVizinho(objRoute.route, i)
-        if vizinho.getFitness() > objRoute.getFitness():
-            objRoute = vizinho
-            break
-
-    return objRoute
-
-def GA ():
+def GA (graph, fileName, popSize, mutationRate, numberOfGenerations, localSearch):
     menorValor = 9999999999
     progress = []
-    population = generate_population(grafo, 200)
-    print("Distancia inicial:", int(population[0].getDistance())) #int(getBestIndividual(population)[0][1].getDistance()))
-    
+    population = generate_population(graph, popSize)
+    print("Distância inicial:", int(population[0].getDistance()))
     #pr = cProfile.Profile()
     #pr.enable()
-    
-    for i in range(0, 700):
-        population = nextGeneration(population, 0.001)
+    inicio = time.time()
+    for i in range(0, numberOfGenerations):
+        population = nextGeneration(population, mutationRate, popSize, localSearch)
         Melhor = int(population[0].getDistance())
         progress.append(Melhor)
         if ( Melhor < menorValor):
@@ -255,16 +211,59 @@ def GA ():
     #ps = pstats.Stats('data')
     #ps.sort_stats(pstats.SortKey.CUMULATIVE)
     #ps.print_stats()
-    
+    fim = time.time()
+    print("Distância final:", menorValor)
+    print("Tempo de execução:",round(((fim - inicio)*1000)/1000,3),"s\n")
     plt.plot(progress)
+    plt.title(fileName)
     plt.ylabel('Distância')
     plt.xlabel('Geração')
     plt.show()
-    #print( "melhorou?", two_opt(menorRota).getDistance())
-    print("Distância final:", menorValor)
 
-arquivo.close()
-GA()
+def readFile ():
+    os.chdir("./Tests")
+    files = []
+    for file in enumerate(glob.glob("*.txt")):
+        files.append(file[1])
+        print("[", file[0], "]", file[1])
+    print("Insira o número correspondente ao arquivo que deseja ler:")
+    
+    while(True):
+        op = int(input())
+        if (op >= len(files) or op < 0):
+            print("Opção inválida! Digite novamente.")
+        else:
+            break
+    
+    os.system('cls')
+    print("Arquivo:", str(files[op]))
+    
+    graph = []
+    arquivo = open(str(files[op]), 'r')
+    linhas = arquivo.readlines()
+    
+    while(not linhas[0].split()[0].isdigit()):
+        linhas.pop(0)
 
+    for index in range(0, len(linhas) - 1):
+        if (linhas[index] == "EOF"):
+            break;
+        linha = linhas[index].split()
+        graph.append(Node(linha[0], linha[1], linha[2]))
+
+    arquivo.close()
+    
+    return graph, str(files[op])
+
+def main ():
+    entrada, fileName = readFile()
+    populationSize = 200 
+    mutationRate = 0.001
+    numberOfGenerations = 700
+    localSearch = False
+    GA(entrada, fileName, populationSize, mutationRate, numberOfGenerations, localSearch)
+
+if __name__ == "__main__":
+    main()
 
 
