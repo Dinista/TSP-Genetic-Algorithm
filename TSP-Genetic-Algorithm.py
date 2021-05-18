@@ -1,6 +1,6 @@
 import math, random, time
 import heapq
-import matplotlib.pyplot as plt #biblioteca para gerar gráficos
+#import matplotlib.pyplot as plt #biblioteca para gerar gráficos
 import glob, os #leitura de arquivo
 
 # ------------------- Vertice (x,y) ---------------------
@@ -18,12 +18,15 @@ class Node:
         return self.y
     
     def distanceTo(self, node):
-        #xDistance = abs(self.getX() - city.getX())
-        #yDistance = abs(self.getY() - city.getY())
-        #distance = math.sqrt((xDistance ** 2) + (yDistance ** 2))
-        nodeA = (self.getX(), self.getY())
-        nodeB = (node.getX(), node.getY())
-        distance = math.dist(nodeA, nodeB)
+        xDistance = abs(self.getX() - node.getX())
+        yDistance = abs(self.getY() - node.getY())
+        distance = math.sqrt((xDistance ** 2) + (yDistance ** 2))
+        
+        #Trecho para python 3.8 e posteriores
+
+        #nodeA = (self.getX(), self.getY())
+        #nodeB = (node.getX(), node.getY())
+        #distance = math.dist(nodeA, nodeB)
         return distance
     
     def __repr__(self) -> str:
@@ -192,18 +195,19 @@ def GA (graph, fileName, popSize, mutationRate, numberOfGenerations, localSearch
     for i in range(0, numberOfGenerations):
         population = nextGeneration(population, mutationRate, popSize, localSearch)
         Melhor = int(population[0].getDistance())
-        progress.append(Melhor)
+        #progress.append(Melhor)
         if ( Melhor < menorValor):
             menorValor = Melhor
             menorRota = population[0]
     fim = time.time()
     print("Distância final:", menorValor)
     print("Tempo de execução:",round(((fim - inicio)*1000)/1000,3),"s\n")
-    plt.plot(progress)
-    plt.title(fileName)
-    plt.ylabel('Distância')
-    plt.xlabel('Geração')
-    plt.show()
+    #plt.plot(progress)
+    #plt.title(fileName)
+    #plt.ylabel('Distância')
+    #plt.xlabel('Geração')
+    #plt.show()
+    input("Aperte enter para encerrar...")
 
 # ------------------- Leitura de arquivo ---------------------
 
@@ -222,9 +226,14 @@ def readFile ():
         else:
             break
     
+    print("Deseja ativar a busca local?")
+    print("[ 0 ] Não")
+    print("[ 1 ] Sim")
+    op1 = input()
+
     os.system('cls')
     print("Arquivo:", str(files[op]))
-    
+
     graph = []
     arquivo = open(str(files[op]), 'r')
     linhas = arquivo.readlines()
@@ -240,17 +249,23 @@ def readFile ():
 
     arquivo.close()
     
-    return graph, str(files[op])
+    return graph, str(files[op]), op1
 
 # ------------------- Main ---------------------
 
 def main ():
-    entrada, fileName = readFile()
+    entrada, fileName, op = readFile()
+    
+    if op == '1':
+        loc =   True
+    else:
+        loc = False
+    
     # ---- Parâmetros do genético -------
     populationSize = 200 
     mutationRate = 0.01
     numberOfGenerations = 300
-    localSearch = True
+    localSearch = loc
     # -----------------------------------
     GA(entrada, fileName, populationSize, mutationRate, numberOfGenerations, localSearch)
 

@@ -1,0 +1,1 @@
+É necessário o pyhton 3.8.
