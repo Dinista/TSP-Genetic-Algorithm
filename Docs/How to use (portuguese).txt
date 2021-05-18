@@ -1,0 +1,16 @@
+O executável preferencialmente deve ser aberto como administrador,
+e a pasta Tests deve estar no mesmo diretório que o executável.
+
+As configurações do AG no executável são fixas:
+- Tamanho população: 200
+- Quantidade de gerações: 300
+- Taxa de mutação: 0.01
+
+
+Para executar com outra configuração, deverá mudar no código:
+linha 264, os parâmetros do genético.
+
+Para executar o código necessário ter instalado pyhton 3.7 ou superior.
+E caso queira que mostre o gráfico do teste executado é necessário instalar
+a biblioteca matplotlib https://pypi.org/project/matplotlib/
+e descomentar as linhas 3, 198, 206 a 210.
